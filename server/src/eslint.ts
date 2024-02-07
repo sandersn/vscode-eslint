@@ -10,7 +10,7 @@ import { execSync } from 'child_process';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-	CodeActionKind, Command, Diagnostic, DiagnosticSeverity, DiagnosticTag, ProposedFeatures, Range, TextEdit, Files, DocumentFilter, DocumentFormattingRegistrationOptions,
+	CodeAction, CodeActionKind, Command, Diagnostic, DiagnosticSeverity, DiagnosticTag, ProposedFeatures, Range, TextEdit, Files, DocumentFilter, DocumentFormattingRegistrationOptions,
 	Disposable, DocumentFormattingRequest, TextDocuments, uinteger
 } from 'vscode-languageserver/node';
 import { URI } from 'vscode-uri';
@@ -239,15 +239,40 @@ export namespace FixableProblem {
 	export function createTextEdit(document: TextDocument, editInfo: FixableProblem): TextEdit {
 		return TextEdit.replace(Range.create(document.positionAt(editInfo.edit.range[0]), document.positionAt(editInfo.edit.range[1])), editInfo.edit.text || '');
 	}
-	export const fixes: Record<string, string> = {
-		'jsdoc/informative-docs': 'Provide useful documentation for this.'
+
+	type CopilotFix = string | {
+		title: string;
+		/** The copilot query is equal to title + message. */
+		message: string;
 	};
 
-	export function createCopilotAction(editInfo: FixableProblem) {
+	export const fixes: Record<string, CopilotFix | CopilotFix[]> = {
+		'jsdoc/informative-docs': 'Provide useful documentation for this.',
+		'constructor-super': {
+			title: 'Add a super call with the correct arguments.',
+			message: 'Add parameters to this constructor and pass them through if that makes sense.'
+		},
+		'no-compare-neg-zero': 'Use Object.is(x, -0) instead of === -0',
+		'no-fallthrough': [
+			{ title: 'Rewrite to avoid fallthrough.', message: 'The fallthrough case should return the same value as before.' },
+			'Add a // fallthrough comment.',
+			'Add a break statement.'
+		],
+	};
+
+	export function createCopilotActions(editInfo: FixableProblem): CodeAction[] {
+		const fix = fixes[editInfo.ruleId];
+		if (Array.isArray(fix)) {
+			return fix.map(f => createCopilotAction(f, editInfo));
+		}
+		return [createCopilotAction(fix, editInfo)];
+	}
+
+	function createCopilotAction(fix: CopilotFix, editInfo: FixableProblem): CodeAction {
 		// TODO: Set isAI instead of prefixing COPILOT
 		// TODO: see if expanding range helps here too
 		// TODO: eventually we'll want a short message for title and long message for copilot
-		const title =`COPILOT: ${editInfo.ruleId}: ${fixes[editInfo.ruleId]}`;
+		const title = typeof fix === 'string' ? `COPILOT: ${editInfo.ruleId}: ${fix}` : `COPILOT: {editInfo.ruleId}: ${fix.title}`;
 		return {
 			title,
 			kind: CodeActionKind.QuickFix,
@@ -255,7 +280,7 @@ export namespace FixableProblem {
 			isPreferred: true,
 			command: Command.create(title, 'vscode.editorChat.start', {
 				initialRange: editInfo.diagnostic.range,
-				message: fixes[editInfo.ruleId],
+				message: typeof fix === 'string' ? fix : `${fix.title} ${fix.message}`,
 				autoSend: true,
 			}),
 		};

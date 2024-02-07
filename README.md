@@ -377,9 +377,18 @@ As with JavaScript validating TypeScript in a mono repository requires that you 
 Migrating from ESLint 5.x to ESLint 6.x might need some adaption (see the [ESLint Migration Guide](https://eslint.org/docs/user-guide/migrating-to-6.0.0) for details). Before filing an issue against the VS Code ESLint extension please ensure that you can successfully validate your files in a terminal using the eslint command.
 
 # Possible AI fixes
-Builtins are done through suggestions:no-implied-eval
-## builtins
-## eslint-plugin-jsdoc
+
+Note that AI fixes need to be
+
+- not overlapping with existing fixes
+- better than /fix's "fix the problem"
+- possible for the AI to fix
+- more complex than "delete" (because /fix will surely suggest that)
+
+## Triage
+
+TODO: Builtins are done through suggestions:no-implied-eval
+TODO: remember to check tsc errors also
 
 
 ### Trivial
@@ -398,7 +407,7 @@ Builtins are done through suggestions:no-implied-eval
 ### Good
 - array-callback-return - add a return and braces this is stupid
 - constructor-super - cONsTrUctOR pass sOmThINg to super!
-- for-direction - rewrite the for loop to conform to stupid ideas
+- for-direction - rewrite the for loop to avoid bugs
 - getter-return - figure out what to return
 - no-await-in-loop - change await to promises.push, call Promise.all afterward on promises
 - no-compare-neg-zero - use Object.is(x, -0) instead, or `=== 0`, dummy
@@ -459,9 +468,15 @@ Builtins are done through suggestions:no-implied-eval
 - max-depth - same: massive refactoring (but may be possible)
 - max-lines - no good way to fix this
 
-## typescript-eslint/eslint-plugin-???
-## eslint-plugin-import
-## eslint-plugin-jest
-## eslint-plugin-unicorn
+Lists of rules to investigate
+- builtins
+- eslint-plugin-jsdoc
+- typescript-eslint/eslint-plugin-???
+- eslint-plugin-import
+- eslint-plugin-jest
+- eslint-plugin-unicorn
 ugh. barfing rainbows over here.
-## remember to check tsc errors also
+
+## Does it beat /fix
+
+- constructor-super - needed to iterate, and even then benefited from explicit instructions not to just pass zeros for everything.

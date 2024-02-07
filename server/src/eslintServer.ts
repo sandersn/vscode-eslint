@@ -838,8 +838,9 @@ messageQueue.registerRequest(CodeActionRequest.type, async (params) => {
 		else if (Problem.isCopilotFixable(editInfo)) {
 			const workspaceChange = new WorkspaceChange();
 			changes.set(`${CommandIds.applySingleFix}:${ruleId}`, workspaceChange);
-			result.get(ruleId).fixes.push(FixableProblem.createCopilotAction(editInfo));
-
+			for (const action of FixableProblem.createCopilotActions(editInfo)) {
+				result.get(ruleId).fixes.push(action);
+			}
 		}
 		if (Problem.hasSuggestions(editInfo)) {
 			editInfo.suggestions.forEach((suggestion, suggestionSequence) => {
