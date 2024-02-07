@@ -376,3 +376,92 @@ As with JavaScript validating TypeScript in a mono repository requires that you 
 
 Migrating from ESLint 5.x to ESLint 6.x might need some adaption (see the [ESLint Migration Guide](https://eslint.org/docs/user-guide/migrating-to-6.0.0) for details). Before filing an issue against the VS Code ESLint extension please ensure that you can successfully validate your files in a terminal using the eslint command.
 
+# Possible AI fixes
+Builtins are done through suggestions:no-implied-eval
+## builtins
+## eslint-plugin-jsdoc
+
+
+### Trivial
+- import/export has no fixer although the fix must usually be 'delete'
+- import/no-mutable-exports has no fixer even though the answer is 'use const'
+- (same with a lot of these)
+- import/dynamic-import-chunkname - might be fixable, but the usual answer is 'delete, you are not webpack'
+- no-async-promise-executor - delete 'async'
+- no-class-assign, no-func-assign, no-import-assign - delete assignment
+- no-cond-assign - might be fixable, but the usual answer is 'delete'
+- no-const-assign, no-dupe-args, no-constant-binary-expression, no-constant-condition, no-dupe-class-members, no-dupe-keys, no-duplicate-case, no-new-native-constructor, no-new-symbol, no-obj-calls, no-unsafe-optional-chaining, no-use-before-define, no-delete-var - have you heard of TS
+- no-constructor-return, no-control-regex, no-empty-character-class, no-empty-pattern, no-debugger, no-invalid-regexp, no-irregular-whitespace, no-misleading-character-class, no-self-assign, no-self-compare, no-setter-return, no-unreachable, no-unsafe-finally, no-unused-vars, no-unused-private-class-members, no-useless-backreference, no-alert, no-console, no-global-assign - delete
+- no-loss-of-precision, no-undef, no-caller, no-implicit-globals - not sure what the fix is here
+- new-cap - capitalise constructor
+
+### Good
+- array-callback-return - add a return and braces this is stupid
+- constructor-super - cONsTrUctOR pass sOmThINg to super!
+- for-direction - rewrite the for loop to conform to stupid ideas
+- getter-return - figure out what to return
+- no-await-in-loop - change await to promises.push, call Promise.all afterward on promises
+- no-compare-neg-zero - use Object.is(x, -0) instead, or `=== 0`, dummy
+- no-dupe-args - silly, but copilot could come up with a decent renaming (except it might not rename right)
+- no-dupe-else-if, no-duplicate-case - copilot *might* come up with something good to do here
+- no-duplicate-imports - merge the imports
+- no-ex-assign - assign to a different variable?
+- no-fallthrough - rewrite to be less clever -- should be easy!
+- no-inner-declarations - move declarations outside or make them expressions (or offer both)
+- no-sparse-arrays - probably 'delete', but maybe refactor some other way
+- no-template-curly-in-string - switch to template string
+- no-this-before-super - rewrite this-after-super, may be tricky
+- no-unexpected-multiline - rewrite to avoid confusing thing
+- no-unmodified-loop-condition - fix-my-bug: typo or something deeper
+- no-unreachable-loop - move break statement or something deeper
+- use-isNaN - use isNaN (does TS catch this too?)
+- accessor-pairs - add missing accessor pair
+- block-scoped-var - make var follow block scope rules
+- camelcase - can't believe we need an AI to fix this
+- class-methods-use-this - (1) make method static (2) move method outside and make it a function
+- complexity - "please reduce the cyclomatic complexity" stupid
+- consistent-return - add explicit returns, and explicitly return undefined
+- consistent-this - I can't tell what this rule wants me to do but I bet copilot can figure it out
+- default-case - add a default case
+- default-case-last - move default case to end
+- func-name-matching - change function name to match assigned variable
+- func-name - add (or remove!) name from function expression
+- func-style - change to (or from!) hipster function declarations
+- grouped-accessor-pairs - move accessor pairs together
+- guard-for-in - add if-hasOwnProperty inside for-in loop
+- id-denylist - come up with a different name for this
+- id-length - make this name shorter (or longer!)
+- id-match - make this name match this regex lol what is this papers please
+- init-declarations - split declaration into assignment -OR- add default initialiser
+- max-lines-per-function - split into multiple functions
+- max-nested-callbacks - reduce callback nesting with temporary variables and extra parameters
+- max-params - refactor into property bag :trolleybus:
+- max-statements - split into multiple functions
+- no-array-constructor - convert to array literal
+- no-bitwise - convert to logical operators?? (that's what the docs suggest is the reason for this rule)
+- no-case-declarations - wrap case code in braces to make it a block
+- no-continue - rewrite this without continue ffs
+- no-empty-function - put placeholder code in this function
+- no-eq-null - use === (this is old so has no fixer)
+- no-extend-native - wrap them instead, I guess?
+- import/no-dynamic-require might be reasonably easy to fix with some refactoring.
+- import/exports-last (assuming context window is big enough) (who even uses this, haskellbros?)
+- import/extensions
+- import/group-exports
+- import/no-anonymous-default-export
+- import/no-named-default
+- import/no-named-export
+- import/prefer-default-export
+### Impossible
+- import/no-amd, import/no-commonjs, import/ambiguous -- well, the AI is welcome to try~~
+- import/no-cycle, same
+- max-classes-per-file - this involves moving LOTS of code and also creating new file
+- max-depth - same: massive refactoring (but may be possible)
+- max-lines - no good way to fix this
+
+## typescript-eslint/eslint-plugin-???
+## eslint-plugin-import
+## eslint-plugin-jest
+## eslint-plugin-unicorn
+ugh. barfing rainbows over here.
+## remember to check tsc errors also
