@@ -10,7 +10,7 @@ import { execSync } from 'child_process';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-	Diagnostic, DiagnosticSeverity, DiagnosticTag, ProposedFeatures, Range, TextEdit, Files, DocumentFilter, DocumentFormattingRegistrationOptions,
+	CodeActionKind, Command, Diagnostic, DiagnosticSeverity, DiagnosticTag, ProposedFeatures, Range, TextEdit, Files, DocumentFilter, DocumentFormattingRegistrationOptions,
 	Disposable, DocumentFormattingRequest, TextDocuments, uinteger
 } from 'vscode-languageserver/node';
 import { URI } from 'vscode-uri';
@@ -221,6 +221,11 @@ export namespace Problem {
 		return problem.edit !== undefined;
 	}
 
+	export function isCopilotFixable(problem: Problem): problem is FixableProblem {
+		// TODO: check that copilot is available and enabled
+ 		return problem.ruleId in FixableProblem.fixes;
+	}
+
 	export function hasSuggestions(problem: Problem): problem is SuggestionsProblem {
 		return problem.suggestions !== undefined;
 	}
@@ -233,6 +238,27 @@ export type FixableProblem = Problem & {
 export namespace FixableProblem {
 	export function createTextEdit(document: TextDocument, editInfo: FixableProblem): TextEdit {
 		return TextEdit.replace(Range.create(document.positionAt(editInfo.edit.range[0]), document.positionAt(editInfo.edit.range[1])), editInfo.edit.text || '');
+	}
+	export const fixes: Record<string, string> = {
+		'jsdoc/informative-docs': 'Provide useful documentation for this.'
+	};
+
+	export function createCopilotAction(editInfo: FixableProblem) {
+		// TODO: Set isAI instead of prefixing COPILOT
+		// TODO: see if expanding range helps here too
+		// TODO: eventually we'll want a short message for title and long message for copilot
+		const title =`COPILOT: ${editInfo.ruleId}: ${fixes[editInfo.ruleId]}`;
+		return {
+			title,
+			kind: CodeActionKind.QuickFix,
+			diagnostics: [editInfo.diagnostic],
+			isPreferred: true,
+			command: Command.create(title, 'vscode.editorChat.start', {
+				initialRange: editInfo.diagnostic.range,
+				message: fixes[editInfo.ruleId],
+				autoSend: true,
+			}),
+		};
 	}
 }
 

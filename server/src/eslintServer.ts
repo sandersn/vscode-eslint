@@ -2,7 +2,6 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
 import * as path from 'path';
 import { EOL } from 'os';
 
@@ -822,7 +821,6 @@ messageQueue.registerRequest(CodeActionRequest.type, async (params) => {
 		documentVersion = editInfo.documentVersion;
 		const ruleId = editInfo.ruleId;
 		allFixableRuleIds.push(ruleId);
-
 		if (Problem.isFixable(editInfo)) {
 			const workspaceChange = new WorkspaceChange();
 			workspaceChange.getTextEditChange({ uri, version: documentVersion }).add(FixableProblem.createTextEdit(textDocument, editInfo));
@@ -836,6 +834,12 @@ messageQueue.registerRequest(CodeActionRequest.type, async (params) => {
 			);
 			action.isPreferred = true;
 			result.get(ruleId).fixes.push(action);
+		}
+		else if (Problem.isCopilotFixable(editInfo)) {
+			const workspaceChange = new WorkspaceChange();
+			changes.set(`${CommandIds.applySingleFix}:${ruleId}`, workspaceChange);
+			result.get(ruleId).fixes.push(FixableProblem.createCopilotAction(editInfo));
+
 		}
 		if (Problem.hasSuggestions(editInfo)) {
 			editInfo.suggestions.forEach((suggestion, suggestionSequence) => {
