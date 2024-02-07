@@ -272,7 +272,7 @@ export namespace FixableProblem {
 		// TODO: Set isAI instead of prefixing COPILOT
 		// TODO: see if expanding range helps here too
 		// TODO: eventually we'll want a short message for title and long message for copilot
-		const title = typeof fix === 'string' ? `COPILOT: ${editInfo.ruleId}: ${fix}` : `COPILOT: {editInfo.ruleId}: ${fix.title}`;
+		const title = typeof fix === 'string' ? `COPILOT: ${editInfo.ruleId}: ${fix}` : `COPILOT: ${editInfo.ruleId}: ${fix.title}`;
 		return {
 			title,
 			kind: CodeActionKind.QuickFix,

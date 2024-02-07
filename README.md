@@ -378,6 +378,14 @@ Migrating from ESLint 5.x to ESLint 6.x might need some adaption (see the [ESLin
 
 # Possible AI fixes
 
+AI fixes are perfect for eslint errors. They:
+
+- often have a single intended fix
+- the fix is often syntactically complex but semantically simple -- so it's hard to build manually but easy for copilot to reconstruct
+- are more likely to be frequent, annoying or incorrect than TS errors (in my extremely biased opinion)
+- the lint rule itself is often a matter of opinion, so people are more likely to feel OK about rejecting or altering bad copilot output.
+
+
 Note that AI fixes need to be
 
 - not overlapping with existing fixes
