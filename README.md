@@ -395,7 +395,7 @@ Note that AI fixes need to be
 
 ## Triage
 
-TODO: Builtins are done through suggestions:no-implied-eval
+TODO: Builtins are done through suggestions:no-retricted-globals
 TODO: remember to check tsc errors also
 
 
@@ -404,13 +404,16 @@ TODO: remember to check tsc errors also
 - import/no-mutable-exports has no fixer even though the answer is 'use const'
 - (same with a lot of these)
 - import/dynamic-import-chunkname - might be fixable, but the usual answer is 'delete, you are not webpack'
+- new-cap - capitalise constructor
+- no-loop-func - use let instead of var
+- no-new-wrappers - use literals instead
 - no-async-promise-executor - delete 'async'
 - no-class-assign, no-func-assign, no-import-assign - delete assignment
 - no-cond-assign - might be fixable, but the usual answer is 'delete'
-- no-const-assign, no-dupe-args, no-constant-binary-expression, no-constant-condition, no-dupe-class-members, no-dupe-keys, no-duplicate-case, no-new-native-constructor, no-new-symbol, no-obj-calls, no-unsafe-optional-chaining, no-use-before-define, no-delete-var - have you heard of TS
-- no-constructor-return, no-control-regex, no-empty-character-class, no-empty-pattern, no-debugger, no-invalid-regexp, no-irregular-whitespace, no-misleading-character-class, no-self-assign, no-self-compare, no-setter-return, no-unreachable, no-unsafe-finally, no-unused-vars, no-unused-private-class-members, no-useless-backreference, no-alert, no-console, no-global-assign - delete
-- no-loss-of-precision, no-undef, no-caller, no-implicit-globals - not sure what the fix is here
-- new-cap - capitalise constructor
+- no-const-assign, no-dupe-args, no-constant-binary-expression, no-constant-condition, no-dupe-class-members, no-dupe-keys, no-duplicate-case, no-new-native-constructor, no-new-symbol, no-obj-calls, no-unsafe-optional-chaining, no-use-before-define, no-delete-var, no-invalid-this, no-redeclare - have you heard of TS
+- no-constructor-return, no-control-regex, no-empty-character-class, no-empty-pattern, no-debugger, no-invalid-regexp, no-irregular-whitespace, no-misleading-character-class, no-self-assign, no-self-compare, no-setter-return, no-unreachable, no-unsafe-finally, no-unused-vars, no-unused-private-class-members, no-useless-backreference, no-alert, no-console, no-global-assign, no-inline-comments, no-labels, no-new-func - delete
+- no-loss-of-precision, no-undef, no-caller, no-implicit-globals, no-restricted-globals - not sure what the fix is here
+- no-object-constructor - use, uh, `{}` instead? Not sure.
 
 ### Good
 - array-callback-return - add a return and braces this is stupid
@@ -461,6 +464,21 @@ TODO: remember to check tsc errors also
 - no-empty-function - put placeholder code in this function
 - no-eq-null - use === (this is old so has no fixer)
 - no-extend-native - wrap them instead, I guess?
+- no-implied-eval - use functions instead of code in strings for setInterval,setTimout, execScript
+- no-iterator -- rewrite to use ES2015 iterators (this seems very rare)
+- no-label-var - choose a different name for the label (or var)
+- no-lone-blocks - unnest the needlessly nested code
+- no-magic-numbers - extract a const with a good name for the magic number
+- no-multi-assign - create multiple assignment statements out of one
+- no-multi-str - create (ugh) multiple strings out of one
+- no-negated-condition - invert the if
+- no-nested-ternary - unnest the ternaries
+- no-new - assign the new expression to a new variable and use that instead
+- no-octal-escape - switch to unicode or hexadecimal or remove the stray slash
+- no-param-reassign - rewrite function to avoid assignment
+- no-plusplus - use +=, rewrite to a new statement if convenient
+- no-proto - change `obj.__proto__` to `Object.get/setPrototypeOf(obj)`
+- no-restricted-exports - suggest a different name, or switch away from `export default` or to it.
 - import/no-dynamic-require might be reasonably easy to fix with some refactoring.
 - import/exports-last (assuming context window is big enough) (who even uses this, haskellbros?)
 - import/extensions

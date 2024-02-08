@@ -269,21 +269,28 @@ export namespace FixableProblem {
 	}
 
 	function createCopilotAction(fix: CopilotFix, editInfo: FixableProblem): CodeAction {
-		// TODO: Set isAI instead of prefixing COPILOT
-		// TODO: see if expanding range helps here too
-		// TODO: eventually we'll want a short message for title and long message for copilot
-		const title = typeof fix === 'string' ? `COPILOT: ${editInfo.ruleId}: ${fix}` : `COPILOT: ${editInfo.ruleId}: ${fix.title}`;
+		// TODO: See if I can get the client to set isAI
+		const title = `${editInfo.ruleId}: Ask copilot to "${typeof fix === 'string' ? fix : fix.title}"`;
 		return {
 			title,
 			kind: CodeActionKind.QuickFix,
 			diagnostics: [editInfo.diagnostic],
 			isPreferred: true,
 			command: Command.create(title, 'vscode.editorChat.start', {
-				initialRange: editInfo.diagnostic.range,
+				initialRange: fixRange(editInfo.ruleId, editInfo.diagnostic.range),
 				message: typeof fix === 'string' ? fix : `${fix.title} ${fix.message}`,
 				autoSend: true,
 			}),
 		};
+	}
+
+	function fixRange(ruleId: string, initial: Range): Range {
+		// TODO: figure out ways to expand the range than just guessing
+		// idea from https://github.com/microsoft/vscode-eslint/issues/1074: reparse tree, find current node, then expand from there
+		if (ruleId === 'no-fallthrough') {
+			return Range.create({ line: initial.start.line - 1, character: initial.start.character }, initial.end);
+		}
+		return initial;
 	}
 }
 
