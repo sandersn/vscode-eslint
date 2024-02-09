@@ -7,6 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { execSync } from 'child_process';
+import { parse } from '@typescript-eslint/parser';
+import type { TSESTree } from '@typescript-eslint/types';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
@@ -32,6 +34,8 @@ export type TextDocumentSettings = Omit<ConfigurationSettings, 'workingDirectory
 	workingDirectory: DirectoryItem | undefined;
 	library: ESLintModule | undefined;
 	resolvedGlobalPackageManagerPath: string | undefined;
+	parser?: string | undefined;
+	parserOptions?: ParserOptions | undefined;
 };
 
 export namespace TextDocumentSettings {
@@ -260,15 +264,12 @@ export namespace FixableProblem {
 		],
 	};
 
-	export function createCopilotActions(editInfo: FixableProblem): CodeAction[] {
+	export function createCopilotActions(editInfo: FixableProblem, settings: TextDocumentSettings, file: string | undefined): CodeAction[] {
 		const fix = fixes[editInfo.ruleId];
-		if (Array.isArray(fix)) {
-			return fix.map(f => createCopilotAction(f, editInfo));
-		}
-		return [createCopilotAction(fix, editInfo)];
+		return (Array.isArray(fix) ? fix : [fix]).map(f => createCopilotAction(f, editInfo, settings, file));
 	}
 
-	function createCopilotAction(fix: CopilotFix, editInfo: FixableProblem): CodeAction {
+	function createCopilotAction(fix: CopilotFix, editInfo: FixableProblem, settings: TextDocumentSettings, file: string | undefined): CodeAction {
 		// TODO: See if I can get the client to set isAI
 		const title = `${editInfo.ruleId}: Ask copilot to "${typeof fix === 'string' ? fix : fix.title}"`;
 		return {
@@ -277,20 +278,69 @@ export namespace FixableProblem {
 			diagnostics: [editInfo.diagnostic],
 			isPreferred: true,
 			command: Command.create(title, 'vscode.editorChat.start', {
-				initialRange: fixRange(editInfo.ruleId, editInfo.diagnostic.range),
+				initialRange: fixRange(editInfo.ruleId, editInfo.diagnostic.range, settings, file),
 				message: typeof fix === 'string' ? fix : `${fix.title} ${fix.message}`,
 				autoSend: true,
 			}),
 		};
 	}
 
-	function fixRange(ruleId: string, initial: Range): Range {
+	function fixRange(ruleId: string, initial: Range, settings: TextDocumentSettings, file: string | undefined): Range {
+		if (!settings.parser || !file) { return initial; }
+		// TODO: Real code here will need to dynamically load the parser (instead of just using typescript-eslint)
 		// TODO: figure out ways to expand the range than just guessing
 		// idea from https://github.com/microsoft/vscode-eslint/issues/1074: reparse tree, find current node, then expand from there
 		if (ruleId === 'no-fallthrough') {
-			return Range.create({ line: initial.start.line - 1, character: initial.start.character }, initial.end);
+			const tree = parse(file, { ...settings.options, loc: true, range: true });
+			const { parents } = findNode(tree, initial);
+			return parents.length >= 2
+			    ? Range.create(
+					{ line: parents[1].loc.start.line, character: parents[1].loc.start.column },
+					{ line: parents[1].loc.end.line, character : parents[1].loc.end.column })
+				: initial;
 		}
 		return initial;
+	}
+
+	function findNode(program: TSESTree.Program, range: Range): { node: TSESTree.Node; parents: TSESTree.Node[] } {
+		let node: TSESTree.Node = program;
+		const parents = [];
+		while (true) {
+			let found = false;
+			outer: for (const p in node) {
+				const kid = (node as any)[p] as TSESTree.Node | TSESTree.Node[];
+				if (Object.hasOwnProperty.call(node, p)) {
+					if (typeof kid === 'object' && 'loc' in kid) {
+						if (contains(kid.loc, range)) {
+							parents.push(node);
+							node = kid;
+							found = true;
+							break;
+						}
+					}
+					else if (Array.isArray(kid)) {
+						for (const k of kid) {
+							if (typeof k === 'object' && 'loc' in k) {
+								if (contains(k.loc, range)) {
+									parents.push(node);
+									node = k;
+									found = true;
+									break outer;
+								}
+							}
+						}
+					}
+				}
+			}
+			if (!found) {
+				break;
+			}
+		}
+		return { node, parents };
+	}
+	function contains(loc: TSESTree.SourceLocation, range: Range): boolean {
+		return (loc.start.line < range.start.line || loc.start.line === range.start.line && loc.start.column <= range.start.character)
+		  && (loc.end.line > range.end.line || loc.end.line === range.end.line && loc.end.column >= range.end.character);
 	}
 }
 
@@ -1019,6 +1069,8 @@ export namespace ESLint {
 										? normalizePath(eslintConfig.parser)
 										: undefined;
 									if (parser !== undefined) {
+										settings.parser = parser;
+										settings.parserOptions = eslintConfig.parserOptions;
 										if (parserRegExps !== undefined) {
 											for (const regExp of parserRegExps) {
 												if (regExp.test(parser)) {

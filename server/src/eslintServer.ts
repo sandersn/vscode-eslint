@@ -310,9 +310,9 @@ messageQueue.onNotification(ValidateNotification.type, (document) => {
 }, (document): number => {
 	return document.version;
 });
-
 documents.onDidOpen(async (event) => {
 	const document = event.document;
+	contents.set(document.uri, document.getText());
 	const settings = await ESLint.resolveSettings(document);
 	if (settings.validate !== Validate.on || !TextDocumentSettings.hasLibrary(settings)) {
 		return;
@@ -326,6 +326,7 @@ documents.onDidOpen(async (event) => {
 documents.onDidChangeContent(async (event) => {
 	const document = event.document;
 	const uri = document.uri;
+	contents.set(uri, document.getText());
 	CodeActions.remove(uri);
 	const settings = await ESLint.resolveSettings(document);
 
@@ -338,6 +339,7 @@ documents.onDidChangeContent(async (event) => {
 // A text document has been saved. Validate the document according the run setting.
 documents.onDidSave(async (event) => {
 	const document = event.document;
+	contents.set(document.uri, document.getText());
 	const settings = await ESLint.resolveSettings(document);
 
 	if (settings.validate !== Validate.on || settings.run !== 'onSave') {
@@ -348,6 +350,7 @@ documents.onDidSave(async (event) => {
 
 documents.onDidClose(async (event) => {
 	const document = event.document;
+	contents.delete(document.uri);
 	const settings = await ESLint.resolveSettings(document);
 
 	const uri = document.uri;
@@ -634,6 +637,7 @@ namespace CommandParams {
 }
 
 const changes = new Changes();
+const contents: Map<string, string> = new Map();
 const ESLintSourceFixAll: string = `${CodeActionKind.SourceFixAll}.eslint`;
 
 messageQueue.registerRequest(CodeActionRequest.type, async (params) => {
@@ -838,7 +842,7 @@ messageQueue.registerRequest(CodeActionRequest.type, async (params) => {
 		else if (Problem.isCopilotFixable(editInfo)) {
 			const workspaceChange = new WorkspaceChange();
 			changes.set(`${CommandIds.applySingleFix}:${ruleId}`, workspaceChange);
-			for (const action of FixableProblem.createCopilotActions(editInfo)) {
+			for (const action of FixableProblem.createCopilotActions(editInfo, settings, contents.get(uri))) {
 				result.get(ruleId).fixes.push(action);
 			}
 		}
